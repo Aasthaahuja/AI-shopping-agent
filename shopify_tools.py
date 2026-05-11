@@ -41,7 +41,14 @@ def search_products(query, max_results=5):
                 }
               }
             }
-            tags
+             tags
+            images(first: 1) {
+              edges {
+                node {
+                  url
+                }
+              }
+            }
           }
         }
       }
@@ -56,6 +63,8 @@ def search_products(query, max_results=5):
         for edge in products:
             node = edge["node"]
             variants = [v["node"] for v in node["variants"]["edges"]]
+            images = node.get("images", {}).get("edges", [])
+            image_url = images[0]["node"]["url"] if images else ""
             result.append({
                 "id": node["id"],
                 "title": node["title"],
@@ -63,7 +72,8 @@ def search_products(query, max_results=5):
                 "price": node["priceRange"]["minVariantPrice"]["amount"],
                 "currency": node["priceRange"]["minVariantPrice"]["currencyCode"],
                 "variants": variants,
-                "tags": node["tags"]
+                "tags": node["tags"],
+                "image": image_url
             })
         return result
     except Exception as e:

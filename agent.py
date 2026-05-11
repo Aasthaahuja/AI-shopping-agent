@@ -38,6 +38,8 @@ Format each product recommendation like this:
 **Product Name** — ₹Price
 Why it works: [one line reason]
 
+Always explicitly mention tradeoffs when recommending multiple products.
+For example: "Option A is cheaper but more casual. Option B costs more but is better for formal occasions."
 Always be conversational, helpful and concise.
 """
 
@@ -47,13 +49,13 @@ def format_products_for_ai(products):
     formatted = []
     for p in products:
         variants_text = ", ".join([v["title"] for v in p["variants"] if v["availableForSale"]])
+        image_tag = f"![{p['title']}]({p['image']})" if p.get("image") else ""
         formatted.append(
-            f"- {p['title']} | Price: ₹{float(p['price']):.0f} | "
+            f"{image_tag}\n- {p['title']} | Price: ₹{float(p['price']):.0f} | "
             f"Available sizes: {variants_text or 'Check store'} | "
             f"Description: {p['description'][:100] if p['description'] else 'Fashion item'}"
         )
     return "\n".join(formatted)
-
 
 def chat(user_message):
     try:

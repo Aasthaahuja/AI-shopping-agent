@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 from agent import chat, handle_add_to_cart
+from shopify_tools import search_products
 
 app = Flask(__name__)
 
@@ -15,13 +16,16 @@ def chat_endpoint():
         if not user_message:
             return jsonify({"error": "Empty message"}), 400
 
-        # Check if user wants to add to cart
-        if any(phrase in user_message.lower() for phrase in ["add to cart", "buy", "purchase", "order"]):
+        if any(phrase in user_message.lower() for phrase in ["add to cart", "buy", "purchase", "order", "i want"]):
             response = handle_add_to_cart(user_message)
+            return jsonify({"response": response, "products": []})
         else:
             response = chat(user_message)
-
-        return jsonify({"response": response})
+            # Fetch products to show images
+            all_products = search_products(user_message, max_results=50)
+            products = [p for p in all_products if not any(word in p['title'].lower() for word in ['snowboard', 'ski', 'gift card', 'hydrogen', 'oxygen', 'liquid'])]
+            product_cards = [{"title": p["title"], "price": p["price"], "image": p.get("image", "")} for p in products[:4]]
+            return jsonify({"response": response, "products": product_cards})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
