@@ -16,16 +16,27 @@ def chat_endpoint():
         if not user_message:
             return jsonify({"error": "Empty message"}), 400
 
-        if any(phrase in user_message.lower() for phrase in ["add to cart", "buy", "purchase", "order", "i want"]):
+        if any(phrase in user_message.lower() for phrase in ["add to cart", "buy", "purchase", "order"]):
             response = handle_add_to_cart(user_message)
             return jsonify({"response": response, "products": []})
-        else:
-            response = chat(user_message)
-            # Fetch products to show images
-            all_products = search_products(user_message, max_results=50)
-            products = [p for p in all_products if not any(word in p['title'].lower() for word in ['snowboard', 'ski', 'gift card', 'hydrogen', 'oxygen', 'liquid'])]
-            product_cards = [{"title": p["title"], "price": p["price"], "image": p.get("image", "")} for p in products[:4]]
-            return jsonify({"response": response, "products": product_cards})
+
+        response = chat(user_message)
+
+        # fetch products to show as cards
+        products_raw = search_products(user_message, max_results=4)
+        products = []
+        if isinstance(products_raw, list):
+            for p in products_raw:
+                # skip non-fashion items
+                if any(skip in p['title'].lower() for skip in ['snowboard', 'gift card', 'ski']):
+                    continue
+                products.append({
+                    "title": p["title"],
+                    "price": f"{float(p['price']):.0f}",
+                    "image": ""
+                })
+
+        return jsonify({"response": response, "products": products})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500

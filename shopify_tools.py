@@ -86,10 +86,8 @@ def get_all_products():
 
 def create_cart(variant_id):
     graphql_query = """
-    mutation {
-      cartCreate(input: {
-        lines: [{ quantity: 1, merchandiseId: "%s" }]
-      }) {
+    mutation cartCreate($input: CartInput!) {
+      cartCreate(input: $input) {
         cart {
           id
           checkoutUrl
@@ -100,15 +98,25 @@ def create_cart(variant_id):
         }
       }
     }
-    """ % variant_id
-
+    """
+    variables = {
+        "input": {
+            "lines": [{"quantity": 1, "merchandiseId": variant_id}]
+        }
+    }
     try:
-        response = requests.post(API_URL, json={"query": graphql_query}, headers=HEADERS)
+        response = requests.post(
+            API_URL,
+            json={"query": graphql_query, "variables": variables},
+            headers=HEADERS
+        )
         data = response.json()
         cart = data.get("data", {}).get("cartCreate", {}).get("cart", {})
         errors = data.get("data", {}).get("cartCreate", {}).get("userErrors", [])
         if errors:
             return {"error": errors[0]["message"]}
+        if not cart:
+            return {"error": "Cart creation failed"}
         return {
             "cart_id": cart.get("id"),
             "checkout_url": cart.get("checkoutUrl")
